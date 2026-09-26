@@ -30,27 +30,35 @@ export async function harvest(
   query: string,
   adapters: SourceAdapter[]
 ): Promise<HarvestReport> {
-  const results = await Promise.allSettled(
-    adapters.map(async adapter => ({
-      adapter,
-      signals: await adapter.collect(query)
-    }))
+  const results = await Promise.all(
+    adapters.map(async adapter => {
+      try {
+        return {
+          ok: true as const,
+          adapter,
+          signals: await adapter.collect(query)
+        };
+      } catch (error: unknown) {
+        return {
+          ok: false as const,
+          sourceId: adapter.definition.id,
+          error: error instanceof Error ? error.message : String(error)
+        };
+      }
+    })
   );
 
   const failures: HarvestFailure[] = [];
   const unique = new Map<string, { signal: RawSignal; source: SourceDefinition }>();
 
   for (const result of results) {
-    if (result.status === "rejected") {
-      failures.push({
-        sourceId: "unknown",
-        error: result.reason instanceof Error ? result.reason.message : String(result.reason)
-      });
+    if (!result.ok) {
+      failures.push({ sourceId: result.sourceId, error: result.error });
       continue;
     }
 
-    for (const signal of result.value.signals) {
-      const source = result.value.adapter.definition;
+    for (const signal of result.signals) {
+      const source = result.adapter.definition;
       const id = key(signal);
       if (!unique.has(id)) unique.set(id, { signal, source });
     }
@@ -70,7 +78,7 @@ export async function harvest(
     successfulSources: adapters.length - failures.length,
     duplicateSignalsRemoved:
       results.reduce((total, result) =>
-        result.status === "fulfilled" ? total + result.value.signals.length : total, 0
+        result.ok ? total + result.signals.length : total, 0
       ) - signals.length
   };
 }
