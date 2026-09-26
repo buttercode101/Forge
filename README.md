@@ -1,68 +1,122 @@
 # Forge
 
-Forge is an evidence-first opportunity discovery engine. It turns research signals into traceable opportunity dossiers and enforces explicit evidence gates before validation.
+**Evidence-first opportunity discovery and validation.**
 
-## Implemented flow
+Forge turns messy research signals into traceable opportunity dossiers and applies explicit evidence gates before an opportunity can be marked validated.
 
-**DISCOVER → HARVEST → NORMALIZE → EVIDENCE → INTELLIGENCE → SYNTHESIZE → DOSSIER → CHALLENGE → VALIDATE**
+[Get started](#quick-start) · [Architecture](ARCHITECTURE.md) · [Security](SECURITY.md) · [Project state](PROJECT_STATE.md) · [Changelog](CHANGELOG.md)
 
-Implemented today:
+## What Forge does
 
-- persistent local opportunity state
-- evidence provenance, confidence and verification states
-- source-isolated harvesting with duplicate handling
-- semantic-ish signal clustering and independent-source counts
-- corroboration and contradiction detection
-- evidence freshness checks
-- evidence-backed opportunity synthesis
-- duplicate opportunity candidate detection
-- challenge generation
-- validation gates
-- atomic local state writes and schema validation
-- live public research adapters for Hacker News and Reddit
-- CLI orchestration
+Forge is a research and validation engine for finding opportunities without confusing signals, opinions, or sourced claims with proof.
 
-## Evidence rules
-
-Forge distinguishes:
-
-- **VERIFIED** — evidence has been explicitly verified and, where applicable, carries a verification timestamp.
-- **CLAIMED** — a sourced assertion that has not been independently verified.
-- **UNKNOWN** — unresolved evidence that may affect a decision.
-- **STALE** — evidence explicitly marked stale or older than the freshness window.
-
-Community and founder claims remain claims. Source reliability affects confidence; it does not manufacture proof.
-
-Validation requires verified commercial/customer evidence, or recorded paid customers backed by payment evidence, at least three direct customer/problem conversations, and no unresolved unknown or stale evidence.
-
-## CLI
-
-```bash
-forge research "clinic reporting" --geography "South Africa"
-forge opportunity add "Example" --problem "Problem" --customer "Customer"
-forge opportunity list
-forge opportunity assess <id>
-forge opportunity challenge <id>
-forge opportunity dossier <id>
-forge opportunity evidence <id> --kind complaint --claim "Observed pain" --source "customer-review" --confidence 0.7
-forge opportunity validation <id> --conversations 3 --paid 1 --payments 1
-forge opportunity validate <id>
-forge opportunity transition <id> validated
+```text
+DISCOVER → HARVEST → NORMALIZE → EVIDENCE → INTELLIGENCE
+                                      ↓
+SYNTHESIZE → DOSSIER → CHALLENGE → VALIDATE
 ```
 
-## Live research
+The system keeps evidence provenance explicit, separates claimed information from verified evidence, detects corroboration and contradiction, and requires a defined validation threshold before the lifecycle can advance.
 
-The current live connectors are:
+## Core capabilities
 
-- Hacker News
-- Reddit
+- **Opportunity discovery** from research signals.
+- **Evidence provenance** with source, confidence, freshness and verification state.
+- **Independent-source analysis** for corroboration and contradiction.
+- **Evidence-backed synthesis** into opportunity dossiers.
+- **Challenge generation** to expose weak assumptions.
+- **Validation gates** that prevent unsupported opportunities from being marked validated.
+- **Persistent local state** with schema validation and atomic writes.
+- **Bounded public research adapters** for Hacker News and Reddit.
+- **Responsive browser workspace** for local opportunity capture, evidence review and validation.
+- **Portable verification** through independent release/proof checks.
 
-Public-source collection is deliberately bounded by request timeout, response-size limits and adapter failure isolation. Retrieved URLs and timestamps are retained as provenance.
+## Evidence model
+
+Forge uses four explicit evidence states:
+
+| State | Meaning |
+|---|---|
+| `VERIFIED` | Evidence has been explicitly verified and may support a validation decision. |
+| `CLAIMED` | A sourced assertion that has not been independently verified. |
+| `UNKNOWN` | Evidence is unresolved and may affect a decision. |
+| `STALE` | Evidence is explicitly stale or outside the configured freshness window. |
+
+A URL, confidence score, community post, or founder statement does **not** automatically become proof.
+
+## Quick start
+
+### CLI
+
+Requirements: Node.js 20+.
+
+```bash
+npm ci
+npm run build
+
+node dist/src/cli.js research "clinic reporting" --geography "South Africa"
+node dist/src/cli.js opportunity add "Example" --problem "Problem" --customer "Customer"
+node dist/src/cli.js opportunity list
+node dist/src/cli.js opportunity assess <id>
+node dist/src/cli.js opportunity dossier <id>
+node dist/src/cli.js opportunity challenge <id>
+```
+
+If the package is installed locally as a CLI:
+
+```bash
+npm link
+forge opportunity list
+```
+
+### Browser workspace
+
+The root `index.html` is a local-first browser surface. Open it directly in a browser or serve the repository root with any static HTTP server.
+
+Browser state is stored locally under a versioned `localStorage` key. It is intentionally **not** treated as authoritative external proof.
 
 ## Verification
 
-Forge has a portable release-verification contract in `tools/verify-release.mjs`. It exercises the built CLI against a temporary real filesystem and uses `tools/standalone-verify.mjs` as an independent, zero-dependency verifier of the persisted state contract. The release check proves the standalone verifier accepts valid state, rejects a deliberate state mutation, and that the canonical CLI/store independently rejects the same mutation. The proof record declares this trust boundary explicitly, and `tools/verify-proof.mjs` independently validates the proof schema/checks. The standalone state verifier does not reimplement Forge's opportunity-decision algorithms. CI publishes the resulting JSON verification record as an artifact.
+Forge maintains several independent verification layers:
 
-CI also runs the full TypeScript build/test suite, strict typechecking, high-severity dependency audit, package smoke, and `git diff --check` across Node 20, 22 and 24. Dependencies are locked in `package-lock.json`.
+```bash
+npm run typecheck
+npm test
+npm run verify:release
+npm run verify:web
+npm audit --audit-level=high
+```
 
-The repository is currently a **CLI/domain engine**, not a web application. Browser/deployment claims are therefore intentionally absent. The validated opportunity state is the handoff boundary for downstream execution.
+CI exercises the project across supported Node versions and checks build integrity, tests, release verification, standalone proof verification, browser contract markers, dependency security and repository hygiene.
+
+The verification contract is documented in the repository and is designed to make important claims executable rather than aspirational.
+
+## Architecture
+
+The TypeScript domain engine is the canonical business-logic layer. The browser workspace is a local-first presentation surface with defensive input normalization.
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for boundaries, [SECURITY.md](SECURITY.md) for the threat model, and [PROJECT_STATE.md](PROJECT_STATE.md) for the current implementation contract.
+
+## Research boundaries
+
+Forge's public-source adapters are deliberately bounded by request timeouts, response-size limits and adapter failure isolation. Retrieved URLs and timestamps are retained as provenance.
+
+Research output is a signal for investigation, not automatic truth.
+
+## Project status
+
+Forge is actively developed. The repository contains a working domain engine, CLI, browser workspace, verification suite and documented security/deployment boundaries.
+
+The production web deployment is intentionally not described here until it is independently verified.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
+
+## Security
+
+See [SECURITY.md](SECURITY.md). Do not commit credentials, API keys, tokens, customer information or private evidence.
+
+## License
+
+Forge is released under the MIT License. See [LICENSE](LICENSE).
