@@ -28,7 +28,10 @@ function validState(value: unknown): value is ForgeState {
     if (typeof item.title !== "string" || !item.title.trim() ||
         typeof item.problem !== "string" || !item.problem.trim() ||
         typeof item.customer !== "string" || !item.customer.trim() ||
-        !Array.isArray(item.existingSolutions) || !Array.isArray(item.differentiators) ||
+        (item.category !== undefined && typeof item.category !== "string") ||
+        (item.geography !== undefined && typeof item.geography !== "string") ||
+        !Array.isArray(item.existingSolutions) || !item.existingSolutions.every(value => typeof value === "string") ||
+        !Array.isArray(item.differentiators) || !item.differentiators.every(value => typeof value === "string") ||
         !Array.isArray(item.evidence) || typeof item.stage !== "string" || !STAGES.has(item.stage as OpportunityStage) ||
         typeof item.createdAt !== "string" || !Number.isFinite(Date.parse(item.createdAt)) ||
         typeof item.updatedAt !== "string" || !Number.isFinite(Date.parse(item.updatedAt))) return false;
@@ -46,7 +49,9 @@ function validState(value: unknown): value is ForgeState {
           typeof raw.source !== "string" || !raw.source.trim() ||
           typeof raw.observedAt !== "string" || !Number.isFinite(Date.parse(raw.observedAt)) ||
           typeof raw.confidence !== "number" || !Number.isFinite(raw.confidence) || raw.confidence < 0 || raw.confidence > 1) return false;
-      if (raw.state === "VERIFIED" && (typeof raw.verifiedAt !== "string" || !Number.isFinite(Date.parse(raw.verifiedAt)))) return false;
+      if (raw.verifiedAt !== undefined && (typeof raw.verifiedAt !== "string" || !Number.isFinite(Date.parse(raw.verifiedAt)))) return false;
+      if (raw.state === "VERIFIED" && typeof raw.verifiedAt !== "string") return false;
+      if (raw.notes !== undefined && typeof raw.notes !== "string") return false;
       evidenceIds.add(raw.id);
     }
     return true;
