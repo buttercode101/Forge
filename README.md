@@ -61,7 +61,7 @@ Public-source collection is deliberately bounded by request timeout, response-si
 
 ## Verification
 
-Forge has a portable release-verification contract in `tools/verify-release.mjs`. It exercises the built CLI against a temporary real filesystem and uses `tools/standalone-verify.mjs` as an independent, zero-dependency verifier of the persisted state contract. The release check proves the standalone verifier accepts valid state, rejects a deliberate state mutation, and that the canonical CLI/store independently rejects the same mutation. The proof record declares this trust boundary explicitly; the standalone verifier does not reimplement Forge's opportunity-decision algorithms. CI publishes the resulting JSON verification record as an artifact.
+Forge has a portable release-verification contract in `tools/verify-release.mjs`. It exercises the built CLI against a temporary real filesystem and uses `tools/standalone-verify.mjs` as an independent, zero-dependency verifier of the persisted state contract. The release check proves the standalone verifier accepts valid state, rejects a deliberate state mutation, and that the canonical CLI/store independently rejects the same mutation. The proof record declares this trust boundary explicitly, and `tools/verify-proof.mjs` independently validates the proof schema/checks. The standalone state verifier does not reimplement Forge's opportunity-decision algorithms. CI publishes the resulting JSON verification record as an artifact.
 
 CI also runs the full TypeScript build/test suite, strict typechecking, high-severity dependency audit, package smoke, and `git diff --check` across Node 20, 22 and 24. Dependencies are locked in `package-lock.json`.
 
