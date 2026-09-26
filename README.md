@@ -61,6 +61,8 @@ Public-source collection is deliberately bounded by request timeout, response-si
 
 ## Verification
 
-CI runs TypeScript compilation, the full Node test suite, and a high-severity npm audit on Node 22.
+Forge has a portable release-verification contract in `tools/verify-release.mjs`. It exercises the built CLI against a temporary real filesystem, verifies persistence and dossier generation, and proves malformed persisted state is rejected. CI publishes the resulting JSON verification record as an artifact.
 
-The repository is currently a **CLI/domain engine**, not a web application. Execution, verification and handoff of built products are intentionally outside this core engine; the validated opportunity state is the handoff boundary for downstream execution.
+CI also runs the full TypeScript build/test suite, strict typechecking, high-severity dependency audit, package smoke, and `git diff --check` across Node 20, 22 and 24. Dependencies are locked in `package-lock.json`.
+
+The repository is currently a **CLI/domain engine**, not a web application. Browser/deployment claims are therefore intentionally absent. The validated opportunity state is the handoff boundary for downstream execution.
