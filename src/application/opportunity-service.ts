@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { Evidence, EvidenceKind, EvidenceState } from "../domain/evidence.js";
 import { Opportunity, OpportunityStage } from "../domain/opportunity.js";
+import { validateOpportunity } from "../domain/validation.js";
 import { OpportunityStore } from "../store/opportunity-store.js";
 
 export interface EvidenceInput {
@@ -96,6 +97,13 @@ export class OpportunityService {
 
     if (!transitions[current.stage].includes(stage)) {
       throw new Error(`Invalid opportunity transition: ${current.stage} -> ${stage}`);
+    }
+
+    if (stage === "validated") {
+      const gate = validateOpportunity(current);
+      if (!gate.pass) {
+        throw new Error(`Validation gate failed: ${gate.requiredActions.join(" ")}`);
+      }
     }
 
     const opportunity = { ...current, stage, updatedAt: new Date().toISOString() };
