@@ -14,7 +14,8 @@
     "test": "node --test dist/tests/*.test.js",
     "check": "npm run build && npm test",
     "typecheck": "tsc --noEmit",
-    "verify:release": "node tools/verify-release.mjs"
+    "verify:release": "node tools/verify-release.mjs",
+    "verify:web": "node tools/verify-web.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
