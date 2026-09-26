@@ -4,7 +4,7 @@ import { buildDossier } from "../src/domain/dossier.js";
 
 test("dossier exposes a complete evidence-backed decision surface", () => {
   const now = new Date().toISOString();
-  const o:any = {
+  const o = {
     id:"o1", title:"Reporting", problem:"Slow reports", customer:"Clinics",
     existingSolutions:["Manual workflow"], differentiators:[],
     stage:"captured", createdAt:now, updatedAt:now,
