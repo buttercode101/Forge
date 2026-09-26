@@ -4,10 +4,10 @@
   "private": true,
   "type": "module",
   "engines": { "node": ">=20" },
-  "bin": { "forge": "./dist/cli.js" },
+  "bin": { "forge": "./dist/src/cli.js" },
   "scripts": {
-    "build": "tsc --outDir dist",
-    "test": "node --test",
+    "build": "rm -rf dist && tsc --outDir dist",
+    "test": "node --test dist/tests",
     "check": "npm run build && npm test"
   },
   "devDependencies": {
