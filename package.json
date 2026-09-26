@@ -20,5 +20,14 @@
   "devDependencies": {
     "@types/node": "^22.0.0",
     "typescript": "^5.6.0"
+  },
+  "description": "Evidence-first opportunity discovery and validation engine",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/buttercode101/Forge.git"
+  },
+  "bugs": {
+    "url": "https://github.com/buttercode101/Forge/issues"
   }
 }
