@@ -18,7 +18,7 @@
     "verify:web": "node tools/verify-web.mjs"
   },
   "devDependencies": {
-    "@types/node": "^22.0.0",
+    "@types/node": "^26.6.2",
     "typescript": "^5.6.0"
   },
   "description": "Evidence-first opportunity discovery and validation engine",
