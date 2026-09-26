@@ -62,7 +62,7 @@ Harvesting deliberately preserves the distinction between a raw signal, a claim,
 
 ## Status
 
-Core domain, persistence, executable validation workflow, CI, and resilient harvesting foundations are implemented. The next production layer is source adapters/connectors and evidence-backed synthesis—not a pivot away from the existing playbook.
+The executable foundation is implemented end-to-end: persistence, harvesting, provenance-aware evidence, clustering, synthesis, intelligence, challenge/validation gates, opportunity dossiers, public research connectors, and CLI orchestration. CI is green. The system remains faithful to the supplied playbook: evidence is collected and synthesized without manufacturing proof.
 
 
 ## Research connectors
