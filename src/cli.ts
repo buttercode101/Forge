@@ -6,6 +6,7 @@ import { assessOpportunity } from "./domain/opportunity.js";
 import { generateChallenges } from "./domain/challenge.js";
 import { validateOpportunity } from "./domain/validation.js";
 import { EvidenceKind, EvidenceState } from "./domain/evidence.js";
+import { OpportunityStage } from "./domain/opportunity.js";
 
 const [command, ...args] = process.argv.slice(2);
 const store = new OpportunityStore();
@@ -113,7 +114,7 @@ async function main(): Promise<void> {
   if (subcommand === "transition") {
     const stage = args.shift();
     if (!stage) usage();
-    console.log(JSON.stringify(await service.transition(id, stage as never), null, 2));
+    console.log(JSON.stringify(await service.transition(id, stage as OpportunityStage), null, 2));
     return;
   }
 
