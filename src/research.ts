@@ -48,7 +48,7 @@ export class RedditAdapter implements SourceAdapter {
 export function publicResearchAdapters(): SourceAdapter[] { return [new HackerNewsAdapter(),new RedditAdapter()]; }
 
 export interface ResearchResult {
-  harvest: HarvestResult;
+  harvest: HarvestReport;
   clusters: ReturnType<typeof clusterSignals>;
   draft: ReturnType<typeof synthesizeOpportunity>;
 }
