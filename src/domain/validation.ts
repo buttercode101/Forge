@@ -21,7 +21,8 @@ export function validateOpportunity(o: Opportunity, now = new Date()): Validatio
   );
   const hasStale = o.evidence.some(e => isEvidenceStale(e, now));
 
-  if (verifiedPayment.length === 0 && o.validation.paidCustomers === 0) {
+  const paidBackedByEvidence = o.validation.paidCustomers > 0 && o.validation.paymentEvidence > 0;
+  if (verifiedPayment.length === 0 && !paidBackedByEvidence) {
     requiredActions.push("Obtain verified payment or customer evidence before treating demand as validated.");
   }
   if (o.validation.customerConversations < 3) {
@@ -32,10 +33,10 @@ export function validateOpportunity(o: Opportunity, now = new Date()): Validatio
   }
   if (hasStale) requiredActions.push("Refresh stale evidence before relying on it.");
   if (verifiedCustomerSignals.length > 0) reasons.push("Verified customer evidence exists.");
-  if (verifiedPayment.length > 0 || o.validation.paidCustomers > 0) reasons.push("There is evidence of payment behavior.");
+  if (verifiedPayment.length > 0 || paidBackedByEvidence) reasons.push("There is evidence of payment behavior.");
 
   const pass =
-    (verifiedPayment.length > 0 || o.validation.paidCustomers > 0) &&
+    (verifiedPayment.length > 0 || paidBackedByEvidence) &&
     o.validation.customerConversations >= 3 &&
     !o.evidence.some(e => e.state === "UNKNOWN") &&
     !hasStale;
