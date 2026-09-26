@@ -40,4 +40,5 @@ test("harvest isolates source failure and deduplicates signals", async () => {
   assert.equal(report.duplicateSignalsRemoved, 1);
   assert.equal(report.evidence[0].confidence, 0.7);
   assert.equal(report.failures.length, 1);
+  assert.equal(report.failures[0].sourceId, "broken");
 });
