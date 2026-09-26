@@ -39,7 +39,7 @@ export class OpportunityService {
       source: input.source.trim(),
       observedAt: input.observedAt ?? new Date().toISOString(),
       verifiedAt: input.verifiedAt,
-      confidence: input.confidence,
+      confidence: Number.isFinite(input.confidence) ? Math.max(0, Math.min(1, input.confidence)) : input.confidence,
       notes: input.notes?.trim() || undefined
     };
     assertEvidenceInput(evidence);
