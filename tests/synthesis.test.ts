@@ -13,7 +13,7 @@ test("synthesis keeps provenance and surfaces missing proof", () => {
     clusters: [],
     evidence: [
       e("p1", "complaint", "Clinics struggle to get reports quickly"),
-      e("c1", "customer", "Independent clinics"),
+      e("c1", "customer", "Independent clinics", "CLAIMED"),
       e("l1", "local-gap", "South African workflow is underserved")
     ]
   });
