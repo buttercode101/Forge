@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { RawSignal, clusterSignals } from "./domain/ingestion.js";
 import { SourceAdapter, SourceDefinition } from "./domain/source.js";
-import { harvest, HarvestResult } from "./domain/harvest.js";
+import { harvest, HarvestReport } from "./domain/harvest.js";
 import { synthesizeOpportunity, SynthesisInput } from "./domain/synthesis.js";
 
 function idFor(source: string, value: string): string {
