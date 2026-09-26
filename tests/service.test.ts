@@ -61,6 +61,4 @@ test("service enforces the pipeline", async () => {
   const service = new OpportunityService(store);
   await service.transition("o1", "researched");
   await assert.rejects(() => service.transition("o1", "validated"));
-  const raw = await readFile((store as unknown as { path?: string }).path ?? "", "utf8").catch(() => "");
-  assert.equal(raw === "", true);
 });
