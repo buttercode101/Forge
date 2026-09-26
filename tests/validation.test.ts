@@ -1,8 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { validateOpportunity } from "../src/domain/validation.js";
+import type { Opportunity } from "../src/domain/opportunity.js";
 
-const base = () => ({
+const base = (): Opportunity => ({
   id: "o1",
   title: "Example",
   problem: "Example problem",
@@ -10,7 +11,7 @@ const base = () => ({
   existingSolutions: [],
   differentiators: [],
   evidence: [],
-  stage: "validation" as const,
+  stage: "validation",
   createdAt: "2026-09-26T00:00:00Z",
   updatedAt: "2026-09-26T00:00:00Z",
   validation: {
