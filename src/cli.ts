@@ -8,6 +8,7 @@ import { validateOpportunity } from "./domain/validation.js";
 import { EvidenceKind, EvidenceState } from "./domain/evidence.js";
 import { OpportunityStage } from "./domain/opportunity.js";
 import { buildDossier } from "./domain/dossier.js";
+import { publicResearchAdapters, research } from "./research.js";
 
 const [command, ...args] = process.argv.slice(2);
 const store = new OpportunityStore();
@@ -26,6 +27,7 @@ Commands:
   forge opportunity transition <id> <stage>
   forge opportunity evidence <id> --kind <kind> --claim <claim> --source <source> --confidence <0..1> [--state <state>]
   forge opportunity validation <id> --conversations <n> --waitlist <n> --trials <n> --paid <n> --payments <n>
+  forge research <query> [--geography <geography>]
 `);
   process.exit(1);
 }
@@ -52,6 +54,14 @@ function integerFlag(args: string[], name: string): number | undefined {
 }
 
 async function main(): Promise<void> {
+  if (command === "research") {
+    const query = args.shift();
+    if (!query) usage();
+    const geography = flag(args, "--geography");
+    console.log(JSON.stringify(await research(query, publicResearchAdapters(), geography), null, 2));
+    return;
+  }
+
   if (command !== "opportunity") usage();
 
   const subcommand = args.shift();
@@ -88,10 +98,15 @@ async function main(): Promise<void> {
     return;
   }
 
+  if (subcommand === "list") {
+    console.log(JSON.stringify((await store.load()).opportunities, null, 2));
+    return;
+  }
+
   const id = args.shift();
   if (!id) usage();
 
-  if (subcommand === "list") {
+  if (false) {
     console.log(JSON.stringify((await store.load()).opportunities, null, 2));
     return;
   }
