@@ -52,3 +52,22 @@ test("json writes are replaced atomically", async () => {
   assert.deepEqual(await readJson(path,{}),{ok:true});
   await unlink(path);
 });
+
+test("state schema rejects malformed optional fields and verified timestamps", async () => {
+  const { OpportunityStore } = await import("../src/store/opportunity-store.js");
+  const { mkdtemp, writeFile, rm } = await import("node:fs/promises");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const dir = await mkdtemp(join(tmpdir(), "forge-state-"));
+  const path = join(dir, "state.json");
+  const base = { version:1, opportunities:[{
+    id:"o",title:"t",problem:"p",customer:"c",existingSolutions:[],differentiators:[],evidence:[],
+    stage:"captured",createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),
+    validation:{customerConversations:0,waitlistSignups:0,trials:0,paidCustomers:0,paymentEvidence:0}
+  }]};
+  await writeFile(path, JSON.stringify({...base, opportunities:[{...base.opportunities[0], category: 7}]}));
+  await assert.rejects(() => new OpportunityStore(path).load(), /invalid/i);
+  await writeFile(path, JSON.stringify({...base, opportunities:[{...base.opportunities[0], evidence:[{id:"e",kind:"revenue",state:"VERIFIED",claim:"paid",source:"x",observedAt:new Date().toISOString(),confidence:1,verifiedAt:"bad"}]}]}));
+  await assert.rejects(() => new OpportunityStore(path).load(), /invalid/i);
+  await rm(dir, {recursive:true,force:true});
+});
