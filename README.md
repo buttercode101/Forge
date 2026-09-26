@@ -63,3 +63,8 @@ Harvesting deliberately preserves the distinction between a raw signal, a claim,
 ## Status
 
 Core domain, persistence, executable validation workflow, CI, and resilient harvesting foundations are implemented. The next production layer is source adapters/connectors and evidence-backed synthesis—not a pivot away from the existing playbook.
+
+
+## Research connectors
+
+Forge can perform live public-source collection through native Node fetch adapters for Hacker News and Reddit. Adapter failures are isolated; successful signals retain source provenance and reliability, then flow through clustering and evidence-preserving synthesis. Public community signals remain research inputs, not payment proof; validation still requires stronger evidence.
