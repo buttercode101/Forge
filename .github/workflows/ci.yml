@@ -42,6 +42,8 @@ jobs:
           path: forge-verification.json
           if-no-files-found: error
           retention-days: 14
+      - name: Web contract verification
+        run: npm run verify:web
       - name: Diff hygiene
         run: git diff --check
       - name: Package smoke
