@@ -33,7 +33,7 @@ Forge distinguishes:
 
 Community and founder claims remain claims. Source reliability affects confidence; it does not manufacture proof.
 
-Validation requires either verified commercial/customer evidence or recorded paid customers, at least three direct customer/problem conversations, and no unresolved unknown or stale evidence.
+Validation requires verified commercial/customer evidence, or recorded paid customers backed by payment evidence, at least three direct customer/problem conversations, and no unresolved unknown or stale evidence.
 
 ## CLI
 
