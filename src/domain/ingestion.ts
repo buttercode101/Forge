@@ -17,7 +17,7 @@ export interface SignalCluster {
   repeatedPain: string;
 }
 
-export function normalizeSignal(signal: RawSignal): Evidence {
+export function normalizeSignal(signal: RawSignal, confidence = 0.5): Evidence {
   return {
     id: signal.id,
     kind: signal.kind,
@@ -25,7 +25,7 @@ export function normalizeSignal(signal: RawSignal): Evidence {
     claim: signal.text,
     source: signal.url ? `${signal.source}: ${signal.url}` : signal.source,
     observedAt: signal.observedAt,
-    confidence: 0.5,
+    confidence: Math.max(0, Math.min(1, confidence)),
     notes: signal.title
   };
 }
