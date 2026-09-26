@@ -13,3 +13,4 @@ export * from "./domain/synthesis.js";
 export * from "./domain/intelligence.js";
 export * from "./domain/merge.js";
 export * from "./domain/dossier.js";
+export * from "./research.js";
