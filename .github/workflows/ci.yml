@@ -30,6 +30,16 @@ jobs:
         run: npm run typecheck
       - name: Build and full test suite
         run: npm run check
+      - name: Release verification
+        run: npm run verify:release > forge-verification.json
+      - name: Upload verification proof
+        if: matrix.node-version == '22'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: forge-verification
+          path: forge-verification.json
+          if-no-files-found: error
+          retention-days: 14
       - name: Diff hygiene
         run: git diff --check
       - name: Package smoke
