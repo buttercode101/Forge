@@ -19,7 +19,8 @@ export function generateChallenges(o: Opportunity): Challenge[] {
   const verifiedCategory = o.existingSolutions.length > 0 ||
     o.evidence.some(e => e.state === "VERIFIED" && e.kind === "competitor");
 
-  if (!verifiedCommercial && o.validation.paidCustomers === 0) {
+  const paidBackedByEvidence = o.validation.paidCustomers > 0 && o.validation.paymentEvidence > 0;
+  if (!verifiedCommercial && !paidBackedByEvidence) {
     challenges.push({
       id: "payment-proof",
       question: "Is there credible evidence that anyone pays for this category or outcome?",
