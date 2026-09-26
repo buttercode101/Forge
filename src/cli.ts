@@ -7,6 +7,7 @@ import { generateChallenges } from "./domain/challenge.js";
 import { validateOpportunity } from "./domain/validation.js";
 import { EvidenceKind, EvidenceState } from "./domain/evidence.js";
 import { OpportunityStage } from "./domain/opportunity.js";
+import { buildDossier } from "./domain/dossier.js";
 
 const [command, ...args] = process.argv.slice(2);
 const store = new OpportunityStore();
@@ -20,6 +21,7 @@ Commands:
   forge opportunity list
   forge opportunity assess <id>
   forge opportunity challenge <id>
+  forge opportunity dossier <id>
   forge opportunity validate <id>
   forge opportunity transition <id> <stage>
   forge opportunity evidence <id> --kind <kind> --claim <claim> --source <source> --confidence <0..1> [--state <state>]
@@ -103,6 +105,11 @@ async function main(): Promise<void> {
 
   if (subcommand === "challenge") {
     console.log(JSON.stringify(generateChallenges(opportunity), null, 2));
+    return;
+  }
+
+  if (subcommand === "dossier") {
+    console.log(JSON.stringify(buildDossier(opportunity), null, 2));
     return;
   }
 
