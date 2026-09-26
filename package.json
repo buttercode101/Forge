@@ -4,8 +4,9 @@
   "private": true,
   "type": "module",
   "engines": { "node": ">=20" },
+  "bin": { "forge": "./dist/cli.js" },
   "scripts": {
-    "build": "tsc --noEmit",
+    "build": "tsc --outDir dist",
     "test": "node --test",
     "check": "npm run build && npm test"
   },
