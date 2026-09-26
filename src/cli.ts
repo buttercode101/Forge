@@ -106,11 +106,6 @@ async function main(): Promise<void> {
   const id = args.shift();
   if (!id) usage();
 
-  if (false) {
-    console.log(JSON.stringify((await store.load()).opportunities, null, 2));
-    return;
-  }
-
   const opportunity = await service.get(id);
 
   if (subcommand === "assess") {
