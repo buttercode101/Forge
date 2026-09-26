@@ -12,3 +12,4 @@ export * from "./domain/harvest.js";
 export * from "./domain/synthesis.js";
 export * from "./domain/intelligence.js";
 export * from "./domain/merge.js";
+export * from "./domain/dossier.js";
