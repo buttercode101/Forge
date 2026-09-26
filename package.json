@@ -7,7 +7,7 @@
   "bin": { "forge": "./dist/src/cli.js" },
   "scripts": {
     "build": "rm -rf dist && tsc --outDir dist",
-    "test": "node --test dist/tests",
+    "test": "node --test dist/tests/*.test.js",
     "check": "npm run build && npm test"
   },
   "devDependencies": {
