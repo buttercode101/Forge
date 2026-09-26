@@ -10,3 +10,5 @@ export * from "./store/opportunity-store.js";
 export * from "./application/opportunity-service.js";
 export * from "./domain/harvest.js";
 export * from "./domain/synthesis.js";
+export * from "./domain/intelligence.js";
+export * from "./domain/merge.js";
