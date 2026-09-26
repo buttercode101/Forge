@@ -8,3 +8,4 @@ export * from "./domain/challenge.js";
 export * from "./store/json-store.js";
 export * from "./store/opportunity-store.js";
 export * from "./application/opportunity-service.js";
+export * from "./domain/harvest.js";
