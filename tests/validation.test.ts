@@ -82,3 +82,11 @@ test("passes with payment evidence, conversations, and no blocking unknowns", ()
 
   assert.equal(validateOpportunity(o).pass, true);
 });
+
+
+test("does not treat an unbacked paid-customer counter as payment proof", () => {
+  const o = base();
+  o.validation.customerConversations = 3;
+  o.validation.paidCustomers = 1;
+  assert.equal(validateOpportunity(o).pass, false);
+});
