@@ -19,6 +19,7 @@ export interface HarvestReport {
 
 function key(signal: RawSignal): string {
   return [
+    signal.source.trim().toLowerCase(),
     signal.kind,
     signal.title.trim().toLowerCase(),
     signal.text.trim().toLowerCase(),
@@ -26,27 +27,19 @@ function key(signal: RawSignal): string {
   ].join("|");
 }
 
-export async function harvest(
-  query: string,
-  adapters: SourceAdapter[]
-): Promise<HarvestReport> {
-  const results = await Promise.all(
-    adapters.map(async adapter => {
-      try {
-        return {
-          ok: true as const,
-          adapter,
-          signals: await adapter.collect(query)
-        };
-      } catch (error: unknown) {
-        return {
-          ok: false as const,
-          sourceId: adapter.definition.id,
-          error: error instanceof Error ? error.message : String(error)
-        };
-      }
-    })
-  );
+export async function harvest(query: string, adapters: SourceAdapter[]): Promise<HarvestReport> {
+  if (!query.trim()) throw new Error("Research query cannot be empty.");
+  const results = await Promise.all(adapters.map(async adapter => {
+    try {
+      return { ok: true as const, adapter, signals: await adapter.collect(query) };
+    } catch (error: unknown) {
+      return {
+        ok: false as const,
+        sourceId: adapter.definition.id,
+        error: error instanceof Error ? error.message : String(error)
+      };
+    }
+  }));
 
   const failures: HarvestFailure[] = [];
   const unique = new Map<string, { signal: RawSignal; source: SourceDefinition }>();
@@ -56,7 +49,6 @@ export async function harvest(
       failures.push({ sourceId: result.sourceId, error: result.error });
       continue;
     }
-
     for (const signal of result.signals) {
       const source = result.adapter.definition;
       const id = key(signal);
@@ -69,6 +61,11 @@ export async function harvest(
     normalizeSignal(item.signal, item.source.reliability)
   );
 
+  const collected = results.reduce(
+    (total, result) => result.ok ? total + result.signals.length : total,
+    0
+  );
+
   return {
     query,
     signals,
@@ -76,9 +73,6 @@ export async function harvest(
     failures,
     sourceCount: adapters.length,
     successfulSources: adapters.length - failures.length,
-    duplicateSignalsRemoved:
-      results.reduce((total, result) =>
-        result.ok ? total + result.signals.length : total, 0
-      ) - signals.length
+    duplicateSignalsRemoved: Math.max(0, collected - signals.length)
   };
 }

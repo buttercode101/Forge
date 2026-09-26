@@ -10,7 +10,8 @@ export type EvidenceKind =
   | "competitor"
   | "local-gap"
   | "first-party"
-  | "internal";
+  | "internal"
+  | "community";
 
 export interface Evidence {
   id: string;
@@ -32,4 +33,21 @@ export function evidenceConfidence(evidence: Evidence): number {
     STALE: 0.25
   };
   return Math.max(0, Math.min(1, evidence.confidence)) * stateMultiplier[evidence.state];
+}
+
+export function assertEvidenceInput(input: Omit<Evidence, "id">): void {
+  if (!input.claim.trim()) throw new Error("Evidence claim cannot be empty.");
+  if (!input.source.trim()) throw new Error("Evidence source cannot be empty.");
+  if (!Number.isFinite(input.confidence) || input.confidence < 0 || input.confidence > 1) {
+    throw new Error("Evidence confidence must be a finite number between 0 and 1.");
+  }
+  if (!Number.isFinite(Date.parse(input.observedAt))) {
+    throw new Error("Evidence observedAt must be a valid ISO date.");
+  }
+  if (input.verifiedAt !== undefined && !Number.isFinite(Date.parse(input.verifiedAt))) {
+    throw new Error("Evidence verifiedAt must be a valid ISO date.");
+  }
+  if (input.state === "VERIFIED" && !input.verifiedAt) {
+    throw new Error("VERIFIED evidence requires verifiedAt.");
+  }
 }

@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { Evidence, EvidenceKind, EvidenceState } from "../domain/evidence.js";
+import { Evidence, EvidenceKind, EvidenceState, assertEvidenceInput } from "../domain/evidence.js";
 import { Opportunity, OpportunityStage } from "../domain/opportunity.js";
 import { validateOpportunity } from "../domain/validation.js";
 import { transition } from "../domain/pipeline.js";
@@ -35,13 +35,14 @@ export class OpportunityService {
       id: randomUUID(),
       kind: input.kind,
       state: input.state ?? "CLAIMED",
-      claim: input.claim,
-      source: input.source,
+      claim: input.claim.trim(),
+      source: input.source.trim(),
       observedAt: input.observedAt ?? new Date().toISOString(),
       verifiedAt: input.verifiedAt,
-      confidence: Math.max(0, Math.min(1, input.confidence)),
-      notes: input.notes
+      confidence: input.confidence,
+      notes: input.notes?.trim() || undefined
     };
+    assertEvidenceInput(evidence);
 
     const opportunity = {
       ...state.opportunities[index],
@@ -87,9 +88,7 @@ export class OpportunityService {
     const current = state.opportunities[index];
     if (stage === "validated") {
       const gate = validateOpportunity(current);
-      if (!gate.pass) {
-        throw new Error(`Validation gate failed: ${gate.requiredActions.join(" ")}`);
-      }
+      if (!gate.pass) throw new Error(`Validation gate failed: ${gate.requiredActions.join(" ")}`);
     }
 
     const opportunity = transition(current, stage);

@@ -4,14 +4,27 @@ import { SourceAdapter, SourceDefinition } from "./domain/source.js";
 import { harvest, HarvestReport } from "./domain/harvest.js";
 import { synthesizeOpportunity, SynthesisInput } from "./domain/synthesis.js";
 
+const MAX_RESPONSE_BYTES = 2_000_000;
+const REQUEST_TIMEOUT_MS = 10_000;
+
 function idFor(source: string, value: string): string {
   return createHash("sha256").update(source + "\n" + value).digest("hex").slice(0, 24);
 }
 
-async function getJson(url: string, headers: Record<string,string> = {}): Promise<any> {
-  const response = await fetch(url, { headers, signal: AbortSignal.timeout(10000) });
+async function getJson(url: string, headers: Record<string,string> = {}): Promise<unknown> {
+  const response = await fetch(url, { headers, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
   if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
-  return response.json();
+  const contentLength = response.headers.get("content-length");
+  if (contentLength && Number(contentLength) > MAX_RESPONSE_BYTES) throw new Error("Response exceeds safety limit.");
+  const body = await response.text();
+  if (Buffer.byteLength(body, "utf8") > MAX_RESPONSE_BYTES) throw new Error("Response exceeds safety limit.");
+  try { return JSON.parse(body); } catch { throw new Error("Source returned invalid JSON."); }
+}
+
+function classifyCommunitySignal(text: string): RawSignal["kind"] {
+  if (/\b(cannot|can't|doesn't|broken|slow|pain|problem|frustrat|expensive|difficult|manual|hate|worst|missing)\b/i.test(text)) return "complaint";
+  if (/\b(alternative|competitor|replace|replacement|vs\.?|versus)\b/i.test(text)) return "competitor";
+  return "community";
 }
 
 export class HackerNewsAdapter implements SourceAdapter {
@@ -20,12 +33,18 @@ export class HackerNewsAdapter implements SourceAdapter {
     const url = new URL("https://hn.algolia.com/api/v1/search");
     url.searchParams.set("query", query); url.searchParams.set("tags","story"); url.searchParams.set("hitsPerPage","25");
     const data = await getJson(url.toString());
-    return (data.hits ?? []).map((hit:any) => ({
-      id:idFor(this.definition.id,String(hit.objectID ?? hit.url ?? hit.title ?? "")), source:this.definition.id,
-      kind:"complaint" as const, title:hit.title ?? "Hacker News discussion", text:hit.story_text ?? hit.title ?? "",
-      observedAt:hit.created_at ?? new Date().toISOString(), url:hit.url ?? `https://news.ycombinator.com/item?id=${hit.objectID}`,
-      metadata:{points:Number(hit.points ?? 0),comments:Number(hit.num_comments ?? 0)}
-    })).filter((x:RawSignal)=>x.text.trim());
+    if (!data || typeof data !== "object" || !Array.isArray((data as {hits?:unknown}).hits)) throw new Error("Unexpected Hacker News response.");
+    return ((data as {hits:unknown[]}).hits).map((hit:unknown) => {
+      const h = hit as Record<string,unknown>;
+      const id = String(h.objectID ?? h.url ?? h.title ?? "");
+      return {
+        id:idFor(this.definition.id,id), source:this.definition.id,
+        kind:classifyCommunitySignal(String(h.story_text ?? h.title ?? "")), title:String(h.title ?? "Hacker News discussion"),
+        text:String(h.story_text ?? h.title ?? ""), observedAt:String(h.created_at ?? new Date().toISOString()),
+        url:h.url ? String(h.url) : `https://news.ycombinator.com/item?id=${h.objectID}`,
+        metadata:{points:Number(h.points ?? 0),comments:Number(h.num_comments ?? 0)}
+      };
+    }).filter(x=>x.text.trim());
   }
 }
 
@@ -35,13 +54,18 @@ export class RedditAdapter implements SourceAdapter {
     const url = new URL("https://www.reddit.com/search.json");
     url.searchParams.set("q",query); url.searchParams.set("sort","relevance"); url.searchParams.set("t","year"); url.searchParams.set("limit","25");
     const data = await getJson(url.toString(), {"User-Agent":"Forge/0.1 research collector"});
-    return (data.data?.children ?? []).map((item:any) => {
-      const p=item.data ?? {}; const permalink=p.permalink ? `https://www.reddit.com${p.permalink}` : undefined;
+    const children = data && typeof data === "object" && (data as any).data && Array.isArray((data as any).data.children)
+      ? (data as any).data.children as unknown[] : null;
+    if (!children) throw new Error("Unexpected Reddit response.");
+    return children.map((item:unknown) => {
+      const p=(item as any).data ?? {};
+      const permalink=p.permalink ? `https://www.reddit.com${String(p.permalink)}` : undefined;
+      const text=[p.title,p.selftext].filter(Boolean).map(String).join("\n\n");
       return { id:idFor(this.definition.id,String(p.name ?? permalink ?? p.title ?? "")), source:this.definition.id,
-        kind:"complaint" as const, title:p.title ?? "Reddit discussion", text:[p.title,p.selftext].filter(Boolean).join("\n\n"),
-        observedAt:p.created_utc ? new Date(p.created_utc*1000).toISOString() : new Date().toISOString(), url:permalink,
-        metadata:{score:Number(p.score ?? 0),comments:Number(p.num_comments ?? 0),subreddit:p.subreddit ?? ""} };
-    }).filter((x:RawSignal)=>x.text.trim());
+        kind:classifyCommunitySignal(text), title:String(p.title ?? "Reddit discussion"), text,
+        observedAt:p.created_utc ? new Date(Number(p.created_utc)*1000).toISOString() : new Date().toISOString(), url:permalink,
+        metadata:{score:Number(p.score ?? 0),comments:Number(p.num_comments ?? 0),subreddit:String(p.subreddit ?? "")} };
+    }).filter(x=>x.text.trim());
   }
 }
 
@@ -54,8 +78,10 @@ export interface ResearchResult {
 }
 
 export async function research(query:string, adapters:SourceAdapter[], geography?:string):Promise<ResearchResult> {
-  const result=await harvest(query,adapters);
+  const cleanQuery = query.trim();
+  if (!cleanQuery || cleanQuery.length > 500) throw new Error("Research query must be between 1 and 500 characters.");
+  const result=await harvest(cleanQuery,adapters);
   const clusters=clusterSignals(result.signals);
-  const input:SynthesisInput={query,evidence:result.evidence,clusters,geography};
+  const input:SynthesisInput={query:cleanQuery,evidence:result.evidence,clusters,geography};
   return {harvest:result,clusters,draft:synthesizeOpportunity(input)};
 }

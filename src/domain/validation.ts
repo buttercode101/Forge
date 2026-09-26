@@ -1,4 +1,4 @@
-import { Evidence, evidenceConfidence } from "./evidence.js";
+import { evidenceConfidence } from "./evidence.js";
 import { Opportunity } from "./opportunity.js";
 
 export interface ValidationGate {
@@ -37,18 +37,14 @@ export function validateOpportunity(o: Opportunity): ValidationGate {
     requiredActions.push("Refresh stale evidence before relying on it.");
   }
 
-  if (verifiedCustomerSignals.length > 0) {
-    reasons.push("Verified customer evidence exists.");
-  }
-
-  if (verifiedPayment.length > 0 || o.validation.paidCustomers > 0) {
-    reasons.push("There is evidence of payment behavior.");
-  }
+  if (verifiedCustomerSignals.length > 0) reasons.push("Verified customer evidence exists.");
+  if (verifiedPayment.length > 0 || o.validation.paidCustomers > 0) reasons.push("There is evidence of payment behavior.");
 
   const pass =
     (verifiedPayment.length > 0 || o.validation.paidCustomers > 0) &&
     o.validation.customerConversations >= 3 &&
-    !o.evidence.some(e => e.state === "UNKNOWN");
+    !o.evidence.some(e => e.state === "UNKNOWN") &&
+    !o.evidence.some(e => e.state === "STALE");
 
   return { pass, reasons, requiredActions };
 }

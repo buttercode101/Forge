@@ -11,7 +11,15 @@ export interface Challenge {
 export function generateChallenges(o: Opportunity): Challenge[] {
   const challenges: Challenge[] = [];
 
-  if (!o.evidence.some(e => e.kind === "revenue" || e.kind === "customer")) {
+  const verifiedCommercial = o.evidence.some(
+    e => e.state === "VERIFIED" &&
+      ["revenue", "pricing", "customer"].includes(e.kind)
+  );
+  const verifiedPain = o.evidence.some(e => e.state === "VERIFIED" && e.kind === "complaint");
+  const verifiedCategory = o.existingSolutions.length > 0 ||
+    o.evidence.some(e => e.state === "VERIFIED" && e.kind === "competitor");
+
+  if (!verifiedCommercial && o.validation.paidCustomers === 0) {
     challenges.push({
       id: "payment-proof",
       question: "Is there credible evidence that anyone pays for this category or outcome?",
@@ -21,7 +29,7 @@ export function generateChallenges(o: Opportunity): Challenge[] {
     });
   }
 
-  if (o.existingSolutions.length === 0) {
+  if (!verifiedCategory) {
     challenges.push({
       id: "category-proof",
       question: "Does an existing category or substitute already solve enough of this problem to establish demand?",
@@ -31,7 +39,7 @@ export function generateChallenges(o: Opportunity): Challenge[] {
     });
   }
 
-  if (!o.evidence.some(e => e.kind === "complaint")) {
+  if (!verifiedPain) {
     challenges.push({
       id: "pain-proof",
       question: "What evidence demonstrates that the problem is painful rather than merely annoying?",
