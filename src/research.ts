@@ -54,11 +54,13 @@ export class RedditAdapter implements SourceAdapter {
     const url = new URL("https://www.reddit.com/search.json");
     url.searchParams.set("q",query); url.searchParams.set("sort","relevance"); url.searchParams.set("t","year"); url.searchParams.set("limit","25");
     const data = await getJson(url.toString(), {"User-Agent":"Forge/0.1 research collector"});
-    const children = data && typeof data === "object" && (data as any).data && Array.isArray((data as any).data.children)
-      ? (data as any).data.children as unknown[] : null;
+    const reddit = data && typeof data === "object" ? (data as { data?: unknown }).data : undefined;
+    const children = reddit && typeof reddit === "object" && Array.isArray((reddit as { children?: unknown }).children)
+      ? (reddit as { children: unknown[] }).children : null;
     if (!children) throw new Error("Unexpected Reddit response.");
     return children.map((item:unknown) => {
-      const p=(item as any).data ?? {};
+      const payload = item && typeof item === "object" ? (item as { data?: unknown }).data : undefined;
+      const p: Record<string, unknown> = payload && typeof payload === "object" ? payload as Record<string, unknown> : {};
       const permalink=p.permalink ? `https://www.reddit.com${String(p.permalink)}` : undefined;
       const text=[p.title,p.selftext].filter(Boolean).map(String).join("\n\n");
       return { id:idFor(this.definition.id,String(p.name ?? permalink ?? p.title ?? "")), source:this.definition.id,
