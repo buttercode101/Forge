@@ -7,7 +7,7 @@ const required = [
   'function esc(',
   'function normalizeOpportunity(',
   'function changeStage(',
-  'validation gate failed',
+  'Validation gate failed',
   'No fabricated proof'
 ];
 const forbidden = [
