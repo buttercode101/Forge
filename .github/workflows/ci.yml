@@ -31,7 +31,7 @@ jobs:
       - name: Build and full test suite
         run: npm run check
       - name: Release verification
-        run: npm run verify:release > forge-verification.json
+        run: node tools/verify-release.mjs > forge-verification.json
       - name: Standalone proof verification
         run: node tools/verify-proof.mjs forge-verification.json
       - name: Upload verification proof
