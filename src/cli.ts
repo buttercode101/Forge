@@ -18,6 +18,7 @@ function usage(): never {
   console.error(`Forge
 
 Commands:
+  forge research <query> [--geography <geography>]
   forge opportunity add <title> --problem <problem> --customer <customer>
   forge opportunity list
   forge opportunity assess <id>
@@ -27,72 +28,49 @@ Commands:
   forge opportunity transition <id> <stage>
   forge opportunity evidence <id> --kind <kind> --claim <claim> --source <source> --confidence <0..1> [--state <state>]
   forge opportunity validation <id> --conversations <n> --waitlist <n> --trials <n> --paid <n> --payments <n>
-  forge research <query> [--geography <geography>]
 `);
   process.exit(1);
 }
 
-function flag(args: string[], name: string): string | undefined {
-  const index = args.indexOf(name);
-  return index >= 0 ? args[index + 1] : undefined;
+function flag(values: string[], name: string): string | undefined {
+  const index = values.indexOf(name);
+  return index >= 0 ? values[index + 1] : undefined;
 }
-
-function requiredFlag(args: string[], name: string): string {
-  const value = flag(args, name);
+function requiredFlag(values: string[], name: string): string {
+  const value = flag(values, name)?.trim();
   if (!value) throw new Error(`Missing required flag ${name}`);
   return value;
 }
-
-function integerFlag(args: string[], name: string): number | undefined {
-  const value = flag(args, name);
+function integerFlag(values: string[], name: string): number | undefined {
+  const value = flag(values, name);
   if (value === undefined) return undefined;
   const parsed = Number(value);
-  if (!Number.isInteger(parsed) || parsed < 0) {
-    throw new Error(`${name} must be a non-negative integer`);
-  }
+  if (!Number.isSafeInteger(parsed) || parsed < 0) throw new Error(`${name} must be a non-negative safe integer`);
   return parsed;
 }
 
 async function main(): Promise<void> {
   if (command === "research") {
-    const query = args.shift();
-    if (!query) usage();
-    const geography = flag(args, "--geography");
+    const query = args.shift()?.trim();
+    if (!query || query.length > 500) throw new Error("Research query must be between 1 and 500 characters.");
+    const geography = flag(args, "--geography")?.trim();
     console.log(JSON.stringify(await research(query, publicResearchAdapters(), geography), null, 2));
     return;
   }
-
   if (command !== "opportunity") usage();
-
   const subcommand = args.shift();
 
   if (subcommand === "add") {
-    const title = args.shift();
+    const title = args.shift()?.trim();
     const problem = requiredFlag(args, "--problem");
     const customer = requiredFlag(args, "--customer");
-    if (!title) usage();
-
+    if (!title) throw new Error("Opportunity title cannot be empty.");
     const now = new Date().toISOString();
     const opportunity = {
-      id: randomUUID(),
-      title,
-      problem,
-      customer,
-      existingSolutions: [],
-      differentiators: [],
-      evidence: [],
-      stage: "captured" as const,
-      createdAt: now,
-      updatedAt: now,
-      validation: {
-        customerConversations: 0,
-        waitlistSignups: 0,
-        trials: 0,
-        paidCustomers: 0,
-        paymentEvidence: 0
-      }
+      id: randomUUID(), title, problem, customer, existingSolutions: [], differentiators: [], evidence: [],
+      stage: "captured" as const, createdAt: now, updatedAt: now,
+      validation: { customerConversations: 0, waitlistSignups: 0, trials: 0, paidCustomers: 0, paymentEvidence: 0 }
     };
-
     await store.add(opportunity);
     console.log(JSON.stringify(opportunity, null, 2));
     return;
@@ -103,35 +81,19 @@ async function main(): Promise<void> {
     return;
   }
 
-  const id = args.shift();
+  const id = args.shift()?.trim();
   if (!id) usage();
-
   const opportunity = await service.get(id);
 
-  if (subcommand === "assess") {
-    console.log(JSON.stringify(assessOpportunity(opportunity), null, 2));
-    return;
-  }
-
-  if (subcommand === "challenge") {
-    console.log(JSON.stringify(generateChallenges(opportunity), null, 2));
-    return;
-  }
-
-  if (subcommand === "dossier") {
-    console.log(JSON.stringify(buildDossier(opportunity), null, 2));
-    return;
-  }
-
-  if (subcommand === "validate") {
-    console.log(JSON.stringify(validateOpportunity(opportunity), null, 2));
-    return;
-  }
+  if (subcommand === "assess") { console.log(JSON.stringify(assessOpportunity(opportunity), null, 2)); return; }
+  if (subcommand === "challenge") { console.log(JSON.stringify(generateChallenges(opportunity), null, 2)); return; }
+  if (subcommand === "dossier") { console.log(JSON.stringify(buildDossier(opportunity), null, 2)); return; }
+  if (subcommand === "validate") { console.log(JSON.stringify(validateOpportunity(opportunity), null, 2)); return; }
 
   if (subcommand === "transition") {
-    const stage = args.shift();
+    const stage = args.shift()?.trim() as OpportunityStage | undefined;
     if (!stage) usage();
-    console.log(JSON.stringify(await service.transition(id, stage as OpportunityStage), null, 2));
+    console.log(JSON.stringify(await service.transition(id, stage), null, 2));
     return;
   }
 
@@ -140,11 +102,9 @@ async function main(): Promise<void> {
     const claim = requiredFlag(args, "--claim");
     const source = requiredFlag(args, "--source");
     const confidence = Number(requiredFlag(args, "--confidence"));
-    if (!Number.isFinite(confidence)) throw new Error("--confidence must be a number");
     const state = (flag(args, "--state") ?? "CLAIMED") as EvidenceState;
-    if (!["VERIFIED", "CLAIMED", "UNKNOWN", "STALE"].includes(state)) {
-      throw new Error("--state must be VERIFIED, CLAIMED, UNKNOWN, or STALE");
-    }
+    if (!Number.isFinite(confidence)) throw new Error("--confidence must be a number");
+    if (!["VERIFIED","CLAIMED","UNKNOWN","STALE"].includes(state)) throw new Error("--state must be VERIFIED, CLAIMED, UNKNOWN, or STALE");
     console.log(JSON.stringify(await service.addEvidence(id, {
       kind, claim, source, confidence, state,
       verifiedAt: state === "VERIFIED" ? new Date().toISOString() : undefined
@@ -160,17 +120,14 @@ async function main(): Promise<void> {
       paidCustomers: integerFlag(args, "--paid"),
       paymentEvidence: integerFlag(args, "--payments")
     };
-    if (Object.values(patch).every(value => value === undefined)) {
-      usage();
-    }
+    if (Object.values(patch).every(value => value === undefined)) usage();
     console.log(JSON.stringify(await service.updateValidation(id, patch), null, 2));
     return;
   }
-
   usage();
 }
 
 main().catch(error => {
-  console.error(error instanceof Error ? error.message : error);
+  console.error(error instanceof Error ? error.message : String(error));
   process.exitCode = 1;
-});
+}

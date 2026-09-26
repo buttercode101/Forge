@@ -15,25 +15,19 @@ export function buildDossier(o: Opportunity, now = new Date()): OpportunityDossi
   const assessment = assessOpportunity(o);
   const intelligence = analyzeOpportunity(o, now);
   const challenges = generateChallenges(o);
-  const reasons: string[] = [];
-
-  if (!intelligence.researchReady) {
-    reasons.push(...intelligence.blockers);
-  }
-
-  if (assessment.validation === 0) {
-    reasons.push("No meaningful customer validation activity recorded.");
-  }
-
-  if (assessment.proof === 0) {
-    reasons.push("No commercial proof is currently recorded.");
-  }
+  const reasons = [...intelligence.blockers, ...assessment.unresolvedRisks];
 
   let decision: OpportunityDossier["decision"] = "HOLD";
   if (!intelligence.researchReady) decision = "RESEARCH";
   else if (assessment.proof === 0 || assessment.validation < 0.25) decision = "CHALLENGE";
-  else if (assessment.validation < 0.75) decision = "VALIDATE";
   else decision = "VALIDATE";
 
-  return { opportunity: o, assessment, intelligence, challenges, decision, decisionReason: reasons };
+  return {
+    opportunity: o,
+    assessment,
+    intelligence,
+    challenges,
+    decision,
+    decisionReason: [...new Set(reasons)]
+  };
 }
