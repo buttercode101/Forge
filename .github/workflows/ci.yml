@@ -32,6 +32,8 @@ jobs:
         run: npm run check
       - name: Release verification
         run: npm run verify:release > forge-verification.json
+      - name: Standalone proof verification
+        run: node tools/verify-proof.mjs forge-verification.json
       - name: Upload verification proof
         if: matrix.node-version == '22'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
