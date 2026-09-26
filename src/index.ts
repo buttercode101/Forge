@@ -2,3 +2,8 @@ export * from "./domain/evidence.js";
 export * from "./domain/opportunity.js";
 export * from "./domain/pipeline.js";
 export * from "./domain/ingestion.js";
+export * from "./domain/validation.js";
+export * from "./domain/source.js";
+export * from "./domain/challenge.js";
+export * from "./store/json-store.js";
+export * from "./store/opportunity-store.js";
