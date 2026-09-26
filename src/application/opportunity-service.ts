@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { Evidence, EvidenceKind, EvidenceState } from "../domain/evidence.js";
 import { Opportunity, OpportunityStage } from "../domain/opportunity.js";
 import { validateOpportunity } from "../domain/validation.js";
+import { transition } from "../domain/pipeline.js";
 import { OpportunityStore } from "../store/opportunity-store.js";
 
 export interface EvidenceInput {
@@ -84,21 +85,6 @@ export class OpportunityService {
     if (index < 0) throw new Error(`Opportunity not found: ${id}`);
 
     const current = state.opportunities[index];
-    const transitions: Record<OpportunityStage, OpportunityStage[]> = {
-      captured: ["researched", "rejected"],
-      researched: ["challenged", "rejected"],
-      challenged: ["validation", "rejected"],
-      validation: ["validated", "rejected", "researched"],
-      validated: ["building", "rejected"],
-      rejected: [],
-      building: ["verified", "rejected"],
-      verified: []
-    };
-
-    if (!transitions[current.stage].includes(stage)) {
-      throw new Error(`Invalid opportunity transition: ${current.stage} -> ${stage}`);
-    }
-
     if (stage === "validated") {
       const gate = validateOpportunity(current);
       if (!gate.pass) {
@@ -106,7 +92,7 @@ export class OpportunityService {
       }
     }
 
-    const opportunity = { ...current, stage, updatedAt: new Date().toISOString() };
+    const opportunity = transition(current, stage);
     state.opportunities[index] = opportunity;
     await this.store.save(state);
     return opportunity;
