@@ -5,6 +5,7 @@ import { harvest } from "../src/domain/harvest.js";
 import { analyzeEvidence } from "../src/domain/intelligence.js";
 import { validateOpportunity } from "../src/domain/validation.js";
 import { writeJson, readJson } from "../src/store/json-store.js";
+import { unlink } from "node:fs/promises";
 
 test("evidence input rejects malformed verified evidence", () => {
   assert.throws(() => assertEvidenceInput({
@@ -49,4 +50,5 @@ test("json writes are replaced atomically", async () => {
   const path=".forge-test-state.json";
   await writeJson(path,{ok:true});
   assert.deepEqual(await readJson(path,{}),{ok:true});
+  await unlink(path);
 });
