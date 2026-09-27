@@ -103,8 +103,15 @@ async function main(): Promise<void> {
     const source = requiredFlag(args, "--source");
     const confidence = Number(requiredFlag(args, "--confidence"));
     const state = (flag(args, "--state") ?? "CLAIMED") as EvidenceState;
-    if (!Number.isFinite(confidence)) throw new Error("--confidence must be a number");
-    if (!["VERIFIED","CLAIMED","UNKNOWN","STALE"].includes(state)) throw new Error("--state must be VERIFIED, CLAIMED, UNKNOWN, or STALE");
+    if (!Number.isFinite(confidence) || confidence < 0 || confidence > 1) {
+      throw new Error("--confidence must be a finite number between 0 and 1");
+    }
+    if (!["revenue","pricing","customer","marketplace","usage","complaint","competitor","local-gap","first-party","internal","community"].includes(kind)) {
+      throw new Error("--kind must be a supported evidence kind");
+    }
+    if (!["VERIFIED","CLAIMED","UNKNOWN","STALE"].includes(state)) {
+      throw new Error("--state must be VERIFIED, CLAIMED, UNKNOWN, or STALE");
+    }
     console.log(JSON.stringify(await service.addEvidence(id, {
       kind, claim, source, confidence, state,
       verifiedAt: state === "VERIFIED" ? new Date().toISOString() : undefined
