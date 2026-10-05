@@ -13,6 +13,7 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { scanProject } from "./project/scan.js";
 import { verifyClaim, type ClaimKind, type Evidence } from "./project/verification.js";
+import { initialProjectState, readProjectState, writeProjectState } from "./project/state.js";
 
 const [command, ...args] = process.argv.slice(2);
 const store = new OpportunityStore();
@@ -57,8 +58,30 @@ function integerFlag(values: string[], name: string): number | undefined {
 
 async function main(): Promise<void> {
   if (command === "scan") {
-    const root = resolve(args.shift() || process.cwd());
-    console.log(JSON.stringify(await scanProject(root), null, 2));
+    const positional = args[0] && !args[0].startsWith("--") ? args.shift() : undefined;
+    const root = resolve(positional || process.cwd());
+    const stateFlag = optionalFlag(args, "--state");
+    const scan = await scanProject(root);
+    if (stateFlag) {
+      const statePath = resolve(stateFlag);
+      const state = (await readProjectState(statePath)) ?? initialProjectState(root);
+      state.scan = scan;
+      state.updatedAt = new Date().toISOString();
+      await writeProjectState(statePath, state);
+    }
+    console.log(JSON.stringify(scan, null, 2));
+    return;
+  }
+  if (command === "change") {
+    const summary = args.shift();
+    if (!summary) throw new Error("Provide a change summary.");
+    const statePath = resolve(optionalFlag(args, "--state") || ".forge/state.json");
+    const commit = optionalFlag(args, "--commit");
+    const state = (await readProjectState(statePath)) ?? initialProjectState(process.cwd());
+    state.changes.push({ id: `change-${state.changes.length + 1}`, summary, createdAt: new Date().toISOString(), ...(commit ? { commit } : {}) });
+    state.updatedAt = new Date().toISOString();
+    await writeProjectState(statePath, state);
+    console.log(JSON.stringify(state.changes.at(-1), null, 2));
     return;
   }
   if (command === "verify") {
@@ -68,7 +91,16 @@ async function main(): Promise<void> {
     const evidencePath = requiredFlag(args, "--evidence");
     const parsed = JSON.parse(await readFile(resolve(evidencePath), "utf8")) as unknown;
     if (!Array.isArray(parsed)) throw new Error("Evidence file must contain a JSON array.");
-    console.log(JSON.stringify(verifyClaim(kind, parsed as Evidence[]), null, 2));
+    const result = verifyClaim(kind, parsed as Evidence[]);
+    const stateFlag = optionalFlag(args, "--state");
+    if (stateFlag) {
+      const statePath = resolve(stateFlag);
+      const state = (await readProjectState(statePath)) ?? initialProjectState(process.cwd());
+      state.verifications.push(result);
+      state.updatedAt = new Date().toISOString();
+      await writeProjectState(statePath, state);
+    }
+    console.log(JSON.stringify(result, null, 2));
     return;
   }
   if (command === "research") {
