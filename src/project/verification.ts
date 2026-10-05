@@ -59,7 +59,8 @@ export function verifyClaim(kind: ClaimKind, evidence: Evidence[]): Verification
     const req = evidence.filter((e): e is Extract<Evidence,{type:"requirement"}> => e.type === "requirement");
     if (!req.length) return { kind, verdict: "UNVERIFIED", reasons: [...reasons, "No requirement verification record was supplied."] };
     if (req.some(e => e.verdict === "DISPROVEN")) return { kind, verdict: "DISPROVEN", reasons: [...reasons, "At least one requirement is disproven."] };
-    if (req.every(e => e.verdict === "PROVEN" && e.evidenceIds.length > 0)) return { kind, verdict: "PROVEN", reasons: [...reasons, "Every supplied requirement is proven by referenced evidence."] };
+    const suppliedIds = new Set(evidence.flatMap(e => (e.type === "command" || e.type === "deployment") && e.id ? [e.id] : []));
+    if (req.every(e => e.verdict === "PROVEN" && e.evidenceIds.length > 0 && e.evidenceIds.every(id => suppliedIds.has(id)))) return { kind, verdict: "PROVEN", reasons: [...reasons, "Every supplied requirement is proven by resolvable referenced evidence."] };
     return { kind, verdict: "UNVERIFIED", reasons: [...reasons, "One or more requirements lack proven evidence."] };
   }
 
@@ -76,5 +77,9 @@ export function verifyClaim(kind: ClaimKind, evidence: Evidence[]): Verification
   if (tests.verdict !== "PROVEN" || build.verdict !== "PROVEN") {
     return { kind, verdict: "UNVERIFIED", reasons: [...reasons, "Requirements are proven, but executable test/build evidence is incomplete."] };
   }
-  return { kind, verdict: "PROVEN", reasons: [...reasons, "Requirements, tests and build are all supported by execution evidence."] };
+  const execution = evidence.filter((e): e is Extract<Evidence,{type:"command"}> => e.type === "command" && (isTestCommand(e.command) || isBuildCommand(e.command)));
+  if (execution.some(e => !e.commit) || new Set(execution.map(e => e.commit)).size !== 1) {
+    return { kind, verdict: "UNVERIFIED", reasons: [...reasons, "Project completion requires test and build evidence bound to the same source commit."] };
+  }
+  return { kind, verdict: "PROVEN", reasons: [...reasons, "Requirements, tests and build are supported by linked execution evidence from the same commit."] };
 }
