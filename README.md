@@ -1,122 +1,93 @@
 # Forge
 
-**Evidence-first opportunity discovery and validation.**
+**Evidence-backed project state for AI-assisted software work.**
 
-Forge turns messy research signals into traceable opportunity dossiers and applies explicit evidence gates before an opportunity can be marked validated.
-
-[Get started](#quick-start) · [Architecture](ARCHITECTURE.md) · [Security](SECURITY.md) · [Project state](PROJECT_STATE.md) · [Changelog](CHANGELOG.md)
-
-## What Forge does
-
-Forge is a research and validation engine for finding opportunities without confusing signals, opinions, or sourced claims with proof.
+Forge exists to stop a software project from being declared complete merely because an agent wrote code or said it finished.
 
 ```text
-DISCOVER → HARVEST → NORMALIZE → EVIDENCE → INTELLIGENCE
-                                      ↓
-SYNTHESIZE → DOSSIER → CHALLENGE → VALIDATE
+UNDERSTAND → BUILD / CHANGE → VERIFY
+       ↑                    ↓
+       └──── evidence-backed state ────┘
 ```
 
-The system keeps evidence provenance explicit, separates claimed information from verified evidence, detects corroboration and contradiction, and requires a defined validation threshold before the lifecycle can advance.
+A declaration is context. Execution evidence is proof.
 
-## Core capabilities
+## Canonical workflow
 
-- **Opportunity discovery** from research signals.
-- **Evidence provenance** with source, confidence, freshness and verification state.
-- **Independent-source analysis** for corroboration and contradiction.
-- **Evidence-backed synthesis** into opportunity dossiers.
-- **Challenge generation** to expose weak assumptions.
-- **Validation gates** that prevent unsupported opportunities from being marked validated.
-- **Persistent local state** with schema validation and atomic writes.
-- **Bounded public research adapters** for Hacker News and Reddit.
-- **Responsive browser workspace** for local opportunity capture, evidence review and validation.
-- **Portable verification** through independent release/proof checks.
-
-## Evidence model
-
-Forge uses four explicit evidence states:
-
-| State | Meaning |
-|---|---|
-| `VERIFIED` | Evidence has been explicitly verified and may support a validation decision. |
-| `CLAIMED` | A sourced assertion that has not been independently verified. |
-| `UNKNOWN` | Evidence is unresolved and may affect a decision. |
-| `STALE` | Evidence is explicitly stale or outside the configured freshness window. |
-
-A URL, confidence score, community post, or founder statement does **not** automatically become proof.
-
-## Quick start
-
-### CLI
-
-Requirements: Node.js 20+.
+### 1. Understand
+`forge scan [project-path]` inspects the project that actually exists. It inventories manifests, test files, CI workflows, deployment configuration and package scripts without claiming any of them work.
 
 ```bash
 npm ci
 npm run build
-
-node dist/src/cli.js research "clinic reporting" --geography "South Africa"
-node dist/src/cli.js opportunity add "Example" --problem "Problem" --customer "Customer"
-node dist/src/cli.js opportunity list
-node dist/src/cli.js opportunity assess <id>
-node dist/src/cli.js opportunity dossier <id>
-node dist/src/cli.js opportunity challenge <id>
+node dist/src/cli.js scan .
 ```
 
-If the package is installed locally as a CLI:
+### 2. Build / Change
+Make the smallest justified change required by the recovered project mission. Forge does not treat a diff, commit, pull request or agent message as completion evidence.
+
+### 3. Verify
+Supply structured evidence and ask Forge to evaluate a concrete claim.
 
 ```bash
-npm link
-forge opportunity list
+node dist/src/cli.js verify tests-pass --evidence evidence.json
+node dist/src/cli.js verify build-works --evidence evidence.json
+node dist/src/cli.js verify deployment-works --evidence evidence.json
+node dist/src/cli.js verify requirement-satisfied --evidence evidence.json
+node dist/src/cli.js verify project-complete --evidence evidence.json
 ```
 
-### Browser workspace
+Current verdicts are:
 
-The root `index.html` is a local-first browser surface. Open it directly in a browser or serve the repository root with any static HTTP server.
+| Verdict | Meaning |
+|---|---|
+| `PROVEN` | The supplied execution evidence supports the claim. |
+| `PARTIAL` | Some evidence exists, but an important proof boundary remains. |
+| `UNVERIFIED` | The required evidence was not supplied. |
+| `DISPROVEN` | Supplied evidence contradicts the claim. |
 
-Browser state is stored locally under a versioned `localStorage` key. It is intentionally **not** treated as authoritative external proof.
+## Verification boundaries
 
-## Verification
+Forge deliberately rejects common false-completion shortcuts:
 
-Forge maintains several independent verification layers:
+- Agent says “tests pass” → **UNVERIFIED**.
+- Test command exits non-zero → **DISPROVEN**.
+- Deployment returns HTTP 200 without source provenance → **PARTIAL**.
+- Healthy deployment runs the wrong commit → **DISPROVEN**.
+- “Project complete” without an explicit requirement set → **UNVERIFIED**.
+- Requirements are proven but executable test/build evidence is missing → **UNVERIFIED**.
+
+The current structured evidence model supports command executions, deployment observations, requirement verification records and non-evidentiary declarations.
+
+## Repository verification
 
 ```bash
 npm run typecheck
+npm run build
 npm test
 npm run verify:release
 npm run verify:web
 npm audit --audit-level=high
 ```
 
-CI exercises the project across supported Node versions and checks build integrity, tests, release verification, standalone proof verification, browser contract markers, dependency security and repository hygiene.
+GitHub CI runs the repository verification suite on supported Node versions.
 
-The verification contract is documented in the repository and is designed to make important claims executable rather than aspirational.
+## Legacy opportunity engine
 
-## Architecture
+This repository previously pivoted into an evidence-first opportunity-discovery product. That implementation remains in the repository for history and migration safety, but it is **not the canonical Forge mission**.
 
-The TypeScript domain engine is the canonical business-logic layer. The browser workspace is a local-first presentation surface with defensive input normalization.
+Its opportunity CLI commands and browser workspace should be treated as legacy/experimental until they are either extracted into a separate product or deliberately removed after their useful components are migrated. Their presence does not redefine Forge.
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for boundaries, [SECURITY.md](SECURITY.md) for the threat model, and [PROJECT_STATE.md](PROJECT_STATE.md) for the current implementation contract.
+## Production state
 
-## Research boundaries
-
-Forge's public-source adapters are deliberately bounded by request timeouts, response-size limits and adapter failure isolation. Retrieved URLs and timestamps are retained as provenance.
-
-Research output is a signal for investigation, not automatic truth.
-
-## Project status
-
-Forge is actively developed. The repository contains a working domain engine, CLI, browser workspace, verification suite and documented security/deployment boundaries.
-
-The production web deployment is intentionally not described here until it is independently verified.
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
+Forge is currently a CLI/library verification layer. A hosted UI is not required to prove the core product. No production web deployment is claimed until a deployment is created from the canonical project-verification surface and reconciled to the exact Git commit.
 
 ## Security
 
-See [SECURITY.md](SECURITY.md). Do not commit credentials, API keys, tokens, customer information or private evidence.
+Do not commit credentials, tokens, customer information or private evidence. Evidence files should contain the minimum material required to prove the claim.
+
+See [SECURITY.md](SECURITY.md) and [PROJECT_STATE.md](PROJECT_STATE.md).
 
 ## License
 
-Forge is released under the MIT License. See [LICENSE](LICENSE).
+MIT.
