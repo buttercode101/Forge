@@ -8,7 +8,7 @@ test("declarations never prove tests", () => {
 });
 
 test("failed execution disproves a tests-pass claim", () => {
-  const evidence: Evidence[] = [{type:"command", command:"npm test", exitCode:1}];
+  const evidence: Evidence[] = [{type:"command", command:"npm test", exitCode:1, commit:"abc"}];
   assert.equal(verifyClaim("tests-pass", evidence).verdict, "DISPROVEN");
 });
 
@@ -40,6 +40,11 @@ test("project completion rejects orphaned evidence references", () => {
     {type:"command", id:"build-1", command:"npm run build", exitCode:0}
   ];
   assert.equal(verifyClaim("project-complete", evidence).verdict, "UNVERIFIED");
+});
+
+test("passing execution without commit provenance is only partial", () => {
+  assert.equal(verifyClaim("tests-pass", [{type:"command", command:"npm test", exitCode:0}]).verdict, "PARTIAL");
+  assert.equal(verifyClaim("build-works", [{type:"command", command:"npm run build", exitCode:0}]).verdict, "PARTIAL");
 });
 
 test("commands that merely mention test or build are not execution proof", () => {
