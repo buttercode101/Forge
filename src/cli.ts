@@ -9,6 +9,10 @@ import { EvidenceKind, EvidenceState } from "./domain/evidence.js";
 import { OpportunityStage } from "./domain/opportunity.js";
 import { buildDossier } from "./domain/dossier.js";
 import { publicResearchAdapters, research } from "./research.js";
+import { readFile } from "node:fs/promises";
+import { resolve } from "node:path";
+import { scanProject } from "./project/scan.js";
+import { verifyClaim, type ClaimKind, type Evidence } from "./project/verification.js";
 
 const [command, ...args] = process.argv.slice(2);
 const store = new OpportunityStore();
@@ -18,6 +22,8 @@ function usage(): never {
   console.error(`Forge
 
 Commands:
+  forge scan [project-path]
+  forge verify <tests-pass|build-works|deployment-works|requirement-satisfied|project-complete> --evidence <evidence.json>
   forge research <query> [--geography <geography>]
   forge opportunity add <title> --problem <problem> --customer <customer>
   forge opportunity list
@@ -50,6 +56,21 @@ function integerFlag(values: string[], name: string): number | undefined {
 }
 
 async function main(): Promise<void> {
+  if (command === "scan") {
+    const root = resolve(args.shift() || process.cwd());
+    console.log(JSON.stringify(await scanProject(root), null, 2));
+    return;
+  }
+  if (command === "verify") {
+    const kind = args.shift() as ClaimKind | undefined;
+    const allowed: ClaimKind[] = ["tests-pass","build-works","deployment-works","requirement-satisfied","project-complete"];
+    if (!kind || !allowed.includes(kind)) throw new Error("Choose a supported structured claim kind.");
+    const evidencePath = requiredFlag(args, "--evidence");
+    const parsed = JSON.parse(await readFile(resolve(evidencePath), "utf8")) as unknown;
+    if (!Array.isArray(parsed)) throw new Error("Evidence file must contain a JSON array.");
+    console.log(JSON.stringify(verifyClaim(kind, parsed as Evidence[]), null, 2));
+    return;
+  }
   if (command === "research") {
     const query = args.shift()?.trim();
     if (!query || query.length > 500) throw new Error("Research query must be between 1 and 500 characters.");
