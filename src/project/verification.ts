@@ -22,6 +22,13 @@ export interface Verification {
 const isTestCommand = (command: string) => /^(?:npm|pnpm|yarn|bun)\s+(?:run\s+)?test(?:\s|$)|^(?:npx\s+)?(?:vitest|jest)(?:\s|$)|^pytest(?:\s|$)|^python(?:3)?\s+-m\s+(?:pytest|unittest)(?:\s|$)|^go\s+test(?:\s|$)|^cargo\s+test(?:\s|$)/i.test(command.trim());
 const isBuildCommand = (command: string) => /^(?:npm|pnpm|yarn|bun)\s+(?:run\s+)?build(?:\s|$)|^go\s+build(?:\s|$)|^cargo\s+build(?:\s|$)|^python(?:3)?\s+-m\s+build(?:\s|$)/i.test(command.trim());
 
+const evidenceSupportsRequirement = (id: string, requirementId: string, evidence: Evidence[]) => {
+  const item = evidence.find(e => (e.type === "command" || e.type === "deployment") && e.id === id);
+  if (!item) return false;
+  if (item.type === "command") return item.requirement === requirementId;
+  return false;
+};
+
 export function verifyClaim(kind: ClaimKind, evidence: Evidence[]): Verification {
   const reasons: string[] = [];
   const declarations = evidence.filter(e => e.type === "declaration");
@@ -59,8 +66,7 @@ export function verifyClaim(kind: ClaimKind, evidence: Evidence[]): Verification
     const req = evidence.filter((e): e is Extract<Evidence,{type:"requirement"}> => e.type === "requirement");
     if (!req.length) return { kind, verdict: "UNVERIFIED", reasons: [...reasons, "No requirement verification record was supplied."] };
     if (req.some(e => e.verdict === "DISPROVEN")) return { kind, verdict: "DISPROVEN", reasons: [...reasons, "At least one requirement is disproven."] };
-    const suppliedIds = new Set(evidence.flatMap(e => (e.type === "command" || e.type === "deployment") && e.id ? [e.id] : []));
-    if (req.every(e => e.verdict === "PROVEN" && e.evidenceIds.length > 0 && e.evidenceIds.every(id => suppliedIds.has(id)))) return { kind, verdict: "PROVEN", reasons: [...reasons, "Every supplied requirement is proven by resolvable referenced evidence."] };
+    if (req.every(e => e.verdict === "PROVEN" && e.evidenceIds.length > 0 && e.evidenceIds.every(id => evidenceSupportsRequirement(id, e.id, evidence)))) return { kind, verdict: "PROVEN", reasons: [...reasons, "Every supplied requirement is proven by evidence explicitly bound to that requirement."] };
     return { kind, verdict: "UNVERIFIED", reasons: [...reasons, "One or more requirements lack proven evidence."] };
   }
 
@@ -68,9 +74,8 @@ export function verifyClaim(kind: ClaimKind, evidence: Evidence[]): Verification
   if (!requirements.length) return { kind, verdict: "UNVERIFIED", reasons: [...reasons, "Project completion requires an explicit requirement set."] };
   if (requirements.some(e => e.verdict === "DISPROVEN")) return { kind, verdict: "DISPROVEN", reasons: [...reasons, "A required outcome is disproven."] };
   if (requirements.some(e => e.verdict !== "PROVEN" || !e.evidenceIds.length)) return { kind, verdict: "UNVERIFIED", reasons: [...reasons, "Not every requirement is proven by evidence."] };
-  const suppliedIds = new Set(evidence.flatMap(e => (e.type === "command" || e.type === "deployment") && e.id ? [e.id] : []));
-  if (requirements.some(r => r.evidenceIds.some(id => !suppliedIds.has(id)))) {
-    return { kind, verdict: "UNVERIFIED", reasons: [...reasons, "One or more requirement evidence references do not resolve to supplied execution or deployment evidence."] };
+  if (requirements.some(r => r.evidenceIds.some(id => !evidenceSupportsRequirement(id, r.id, evidence)))) {
+    return { kind, verdict: "UNVERIFIED", reasons: [...reasons, "One or more requirement evidence references are missing or not explicitly bound to that requirement."] };
   }
   const tests = verifyClaim("tests-pass", evidence);
   const build = verifyClaim("build-works", evidence);
