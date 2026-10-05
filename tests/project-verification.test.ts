@@ -27,8 +27,8 @@ test("project completion requires requirements plus execution evidence", () => {
   assert.equal(verifyClaim("project-complete", base).verdict, "UNVERIFIED");
   const complete: Evidence[] = [
     {type:"requirement", id:"R1", verdict:"PROVEN", evidenceIds:["test-1","build-1"]},
-    {type:"command", id:"test-1", command:"npm test", exitCode:0, commit:"abc"},
-    {type:"command", id:"build-1", command:"npm run build", exitCode:0, commit:"abc"}
+    {type:"command", id:"test-1", command:"npm test", exitCode:0, commit:"abc", requirement:"R1"},
+    {type:"command", id:"build-1", command:"npm run build", exitCode:0, commit:"abc", requirement:"R1"}
   ];
   assert.equal(verifyClaim("project-complete", complete).verdict, "PROVEN");
 });
@@ -50,8 +50,17 @@ test("commands that merely mention test or build are not execution proof", () =>
 test("project completion requires test and build proof from the same commit", () => {
   const evidence: Evidence[] = [
     {type:"requirement", id:"R1", verdict:"PROVEN", evidenceIds:["test-1","build-1"]},
-    {type:"command", id:"test-1", command:"npm test", exitCode:0, commit:"old"},
-    {type:"command", id:"build-1", command:"npm run build", exitCode:0, commit:"new"}
+    {type:"command", id:"test-1", command:"npm test", exitCode:0, commit:"old", requirement:"R1"},
+    {type:"command", id:"build-1", command:"npm run build", exitCode:0, commit:"new", requirement:"R1"}
   ];
   assert.equal(verifyClaim("project-complete", evidence).verdict, "UNVERIFIED");
+});
+
+
+test("requirement evidence cannot be borrowed from an unrelated requirement", () => {
+  const evidence: Evidence[] = [
+    {type:"requirement", id:"R1", verdict:"PROVEN", evidenceIds:["test-r2"]},
+    {type:"command", id:"test-r2", command:"npm test", exitCode:0, commit:"abc", requirement:"R2"}
+  ];
+  assert.equal(verifyClaim("requirement-satisfied", evidence).verdict, "UNVERIFIED");
 });
