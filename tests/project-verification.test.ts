@@ -25,9 +25,24 @@ test("deployment must match expected commit", () => {
 test("project completion requires requirements plus execution evidence", () => {
   const base: Evidence[] = [{type:"requirement", id:"R1", verdict:"PROVEN", evidenceIds:["e1"]}];
   assert.equal(verifyClaim("project-complete", base).verdict, "UNVERIFIED");
-  const complete: Evidence[] = [...base,
-    {type:"command", command:"npm test", exitCode:0},
-    {type:"command", command:"npm run build", exitCode:0}
+  const complete: Evidence[] = [
+    {type:"requirement", id:"R1", verdict:"PROVEN", evidenceIds:["test-1","build-1"]},
+    {type:"command", id:"test-1", command:"npm test", exitCode:0},
+    {type:"command", id:"build-1", command:"npm run build", exitCode:0}
   ];
   assert.equal(verifyClaim("project-complete", complete).verdict, "PROVEN");
+});
+
+test("project completion rejects orphaned evidence references", () => {
+  const evidence: Evidence[] = [
+    {type:"requirement", id:"R1", verdict:"PROVEN", evidenceIds:["made-up"]},
+    {type:"command", id:"test-1", command:"npm test", exitCode:0},
+    {type:"command", id:"build-1", command:"npm run build", exitCode:0}
+  ];
+  assert.equal(verifyClaim("project-complete", evidence).verdict, "UNVERIFIED");
+});
+
+test("commands that merely mention test or build are not execution proof", () => {
+  assert.equal(verifyClaim("tests-pass", [{type:"command", command:"echo test", exitCode:0}]).verdict, "UNVERIFIED");
+  assert.equal(verifyClaim("build-works", [{type:"command", command:"echo build", exitCode:0}]).verdict, "UNVERIFIED");
 });
