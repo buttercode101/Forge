@@ -23,7 +23,8 @@ function usage(): never {
   console.error(`Forge
 
 Commands:
-  forge scan [project-path]
+  forge scan [project-path] [--state .forge/state.json]
+  forge change <summary> [--state .forge/state.json] [--commit sha]
   forge verify <tests-pass|build-works|deployment-works|requirement-satisfied|project-complete> --evidence <evidence.json>
   forge research <query> [--geography <geography>]
   forge opportunity add <title> --problem <problem> --customer <customer>
@@ -60,7 +61,7 @@ async function main(): Promise<void> {
   if (command === "scan") {
     const positional = args[0] && !args[0].startsWith("--") ? args.shift() : undefined;
     const root = resolve(positional || process.cwd());
-    const stateFlag = optionalFlag(args, "--state");
+    const stateFlag = flag(args, "--state");
     const scan = await scanProject(root);
     if (stateFlag) {
       const statePath = resolve(stateFlag);
@@ -75,8 +76,8 @@ async function main(): Promise<void> {
   if (command === "change") {
     const summary = args.shift();
     if (!summary) throw new Error("Provide a change summary.");
-    const statePath = resolve(optionalFlag(args, "--state") || ".forge/state.json");
-    const commit = optionalFlag(args, "--commit");
+    const statePath = resolve(flag(args, "--state") || ".forge/state.json");
+    const commit = flag(args, "--commit");
     const state = (await readProjectState(statePath)) ?? initialProjectState(process.cwd());
     state.changes.push({ id: `change-${state.changes.length + 1}`, summary, createdAt: new Date().toISOString(), ...(commit ? { commit } : {}) });
     state.updatedAt = new Date().toISOString();
@@ -92,7 +93,7 @@ async function main(): Promise<void> {
     const parsed = JSON.parse(await readFile(resolve(evidencePath), "utf8")) as unknown;
     if (!Array.isArray(parsed)) throw new Error("Evidence file must contain a JSON array.");
     const result = verifyClaim(kind, parsed as Evidence[]);
-    const stateFlag = optionalFlag(args, "--state");
+    const stateFlag = flag(args, "--state");
     if (stateFlag) {
       const statePath = resolve(stateFlag);
       const state = (await readProjectState(statePath)) ?? initialProjectState(process.cwd());
