@@ -24,7 +24,7 @@ function usage(): never {
 
 Commands:
   forge scan [project-path] [--state .forge/state.json]
-  forge change <summary> [--state .forge/state.json] [--commit sha]
+  forge plan <goal> --requirements <requirements.json> [--state .forge/state.json]\n  forge change <summary> [--state .forge/state.json] [--commit sha]
   forge verify <tests-pass|build-works|deployment-works|requirement-satisfied|project-complete> --evidence <evidence.json>
   forge research <query> [--geography <geography>]
   forge opportunity add <title> --problem <problem> --customer <customer>
@@ -72,6 +72,18 @@ async function main(): Promise<void> {
     }
     console.log(JSON.stringify(scan, null, 2));
     return;
+  }
+  if (command === "plan") {
+    const goal=args.shift()?.trim();
+    if(!goal) throw new Error("Provide a plan goal.");
+    const requirementsPath=requiredFlag(args,"--requirements");
+    const parsed=JSON.parse(await readFile(resolve(requirementsPath),"utf8")) as unknown;
+    if(!Array.isArray(parsed)||!parsed.length||parsed.some(x=>typeof x!=="string"||!x.trim())) throw new Error("Requirements file must contain a non-empty JSON string array.");
+    const statePath=resolve(flag(args,"--state")||".forge/state.json");
+    const state=(await readProjectState(statePath))??initialProjectState(process.cwd());
+    const plan={id:`plan-${state.plans.length+1}`,goal,requirements:parsed.map(x=>(x as string).trim()),createdAt:new Date().toISOString()};
+    state.plans.push(plan);state.updatedAt=new Date().toISOString();await writeProjectState(statePath,state);
+    console.log(JSON.stringify(plan,null,2));return;
   }
   if (command === "change") {
     const summary = args.shift();
