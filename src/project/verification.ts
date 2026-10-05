@@ -35,19 +35,21 @@ export function verifyClaim(kind: ClaimKind, evidence: Evidence[]): Verification
   if (declarations.length) reasons.push("Agent declarations are context only; they are not verification evidence.");
 
   if (kind === "tests-pass") {
-    const testRuns = evidence.filter(e => e.type === "command" && isTestCommand(e.command));
+    const testRuns = evidence.filter((e): e is Extract<Evidence,{type:"command"}> => e.type === "command" && isTestCommand(e.command));
     if (!testRuns.length) return { kind, verdict: "UNVERIFIED", reasons: [...reasons, "No executed test command evidence was supplied."] };
-    if (testRuns.some(e => e.type === "command" && e.exitCode !== 0)) return { kind, verdict: "DISPROVEN", reasons: [...reasons, "At least one supplied test execution failed."] };
-    return { kind, verdict: "PROVEN", reasons: [...reasons, "Supplied test executions completed with exit code 0."] };
+    if (testRuns.some(e => e.exitCode !== 0)) return { kind, verdict: "DISPROVEN", reasons: [...reasons, "At least one supplied test execution failed."] };
+    if (testRuns.some(e => !e.commit)) return { kind, verdict: "PARTIAL", reasons: [...reasons, "Tests passed, but the execution was not bound to a source commit."] };
+    if (new Set(testRuns.map(e => e.commit)).size !== 1) return { kind, verdict: "PARTIAL", reasons: [...reasons, "Tests passed across multiple source commits; no single tested revision is proven."] };
+    return { kind, verdict: "PROVEN", reasons: [...reasons, "Supplied test executions passed and are bound to one source commit."] };
   }
 
   if (kind === "build-works") {
-    const builds = evidence.filter(e => e.type === "command" && isBuildCommand(e.command) && e.exitCode === 0);
-    const failedBuild = evidence.some(e => e.type === "command" && isBuildCommand(e.command) && e.exitCode !== 0);
-    if (failedBuild) return { kind, verdict: "DISPROVEN", reasons: [...reasons, "A supplied build execution failed."] };
-    return builds.length
-      ? { kind, verdict: "PROVEN", reasons: [...reasons, "A build command executed successfully."] }
-      : { kind, verdict: "UNVERIFIED", reasons: [...reasons, "No successful build execution evidence was supplied."] };
+    const buildRuns = evidence.filter((e): e is Extract<Evidence,{type:"command"}> => e.type === "command" && isBuildCommand(e.command));
+    if (!buildRuns.length) return { kind, verdict: "UNVERIFIED", reasons: [...reasons, "No build execution evidence was supplied."] };
+    if (buildRuns.some(e => e.exitCode !== 0)) return { kind, verdict: "DISPROVEN", reasons: [...reasons, "A supplied build execution failed."] };
+    if (buildRuns.some(e => !e.commit)) return { kind, verdict: "PARTIAL", reasons: [...reasons, "The build passed, but the execution was not bound to a source commit."] };
+    if (new Set(buildRuns.map(e => e.commit)).size !== 1) return { kind, verdict: "PARTIAL", reasons: [...reasons, "Builds passed across multiple source commits; no single built revision is proven."] };
+    return { kind, verdict: "PROVEN", reasons: [...reasons, "A build command passed and is bound to one source commit."] };
   }
 
   if (kind === "deployment-works") {
