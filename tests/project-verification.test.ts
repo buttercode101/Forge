@@ -80,3 +80,11 @@ test("a successful command with a non-build name cannot prove a build even with 
   const evidence: Evidence[] = [{type:"command", command:"npm run lint", exitCode:0, commit:"abc"}];
   assert.equal(verifyClaim("build-works", evidence).verdict, "UNVERIFIED");
 });
+
+test("declaration cannot rescue failed execution", () => {
+  const evidence: Evidence[] = [
+    {type:"declaration", text:"all tests pass and the project is production ready"},
+    {type:"command", command:"npm test", exitCode:1, commit:"abc"}
+  ];
+  assert.equal(verifyClaim("tests-pass", evidence).verdict, "DISPROVEN");
+});
