@@ -69,3 +69,14 @@ test("requirement evidence cannot be borrowed from an unrelated requirement", ()
   ];
   assert.equal(verifyClaim("requirement-satisfied", evidence).verdict, "UNVERIFIED");
 });
+
+
+test("a successful command with a non-test name cannot prove tests even with commit provenance", () => {
+  const evidence: Evidence[] = [{type:"command", command:"npm run lint", exitCode:0, commit:"abc"}];
+  assert.equal(verifyClaim("tests-pass", evidence).verdict, "UNVERIFIED");
+});
+
+test("a successful command with a non-build name cannot prove a build even with commit provenance", () => {
+  const evidence: Evidence[] = [{type:"command", command:"npm run lint", exitCode:0, commit:"abc"}];
+  assert.equal(verifyClaim("build-works", evidence).verdict, "UNVERIFIED");
+});
