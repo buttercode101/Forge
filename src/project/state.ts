@@ -10,11 +10,14 @@ export interface ChangeRecord {
   commit?: string;
 }
 
+export interface PlanRecord { id: string; goal: string; requirements: string[]; createdAt: string; }
+
 export interface ForgeProjectState {
   schemaVersion: 1;
   projectRoot: string;
   updatedAt: string;
   scan?: ProjectScan;
+  plans: PlanRecord[];
   changes: ChangeRecord[];
   verifications: Verification[];
 }
@@ -25,6 +28,7 @@ export async function readProjectState(path: string): Promise<ForgeProjectState 
     if (raw.schemaVersion !== 1 || !Array.isArray(raw.changes) || !Array.isArray(raw.verifications)) {
       throw new Error("Unsupported or malformed Forge project state.");
     }
+    raw.plans = Array.isArray(raw.plans) ? raw.plans : [];
     return raw;
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
@@ -40,5 +44,5 @@ export async function writeProjectState(path: string, state: ForgeProjectState):
 }
 
 export function initialProjectState(projectRoot: string): ForgeProjectState {
-  return { schemaVersion: 1, projectRoot, updatedAt: new Date().toISOString(), changes: [], verifications: [] };
+  return { schemaVersion: 1, projectRoot, updatedAt: new Date().toISOString(), plans: [], changes: [], verifications: [] };
 }
